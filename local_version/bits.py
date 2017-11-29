@@ -2,29 +2,26 @@
 import requests
 from path import Path
 
-RANDOM_ORG_QUOTA_API = 'https://www.random.org/quota/'
 RANDOM_ORG_INTEGER_API = 'https://www.random.org/integers/'
 
 class Failure(Exception):
     pass
 
-class RandomOrg(object):
+class GenRand(object):
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update({'user-agent': 'stelminator@gmail.com'})
+        self.session.headers.update({'user-agent': 'xc2416@columbia.edu'})
 
-    def get_integers(self, num = 1, min_int = 1, max_int = 2, col = 1, base = 16, format_return='plain', rnd='1'):
-        #TODO: deal with exponential backoff when trying to get data
+    def get_integers(self, nums = 1, minRand = 1, maxRand = 2, col = 1, base = 16, format_return='plain', rnd='1'):
         ints = self.session.get(RANDOM_ORG_INTEGER_API, params = {
-            'num' : str(num),
-            'min' : str(min_int),
-            'max' : str(max_int),
+            'num' : str(nums),
+            'min' : str(minRand),
+            'max' : str(maxRand),
             'col' : str(col),
             'base' : str(base),
             'format' : str(format_return),
             'rnd' : str(rnd)
             })
-        # break into pieces, filter empties, parse as hex
         if 200 != ints.status_code:
             raise Failure(ints)
         try:
@@ -34,7 +31,6 @@ class RandomOrg(object):
         return vals
 
     def get_and_save_bytes(self, num_bytes, directory='.'):
-        #TODO: validate all filenames are ints
         files = sorted(int(pth.basename().split('.')[0]) for pth in Path(directory).files('*.rawbytes'))
         if files:
             nextbase = str(files[-1] + 1)
@@ -48,18 +44,14 @@ class RandomOrg(object):
         return value
 
     def get_bytes_from_local(self, directory='.'):
-        retval = []
+        res = []
         files = sorted(int(pth.basename().split('.')[0]) for pth in Path(directory).files('*.rawbytes'))
         for i in files:
-            retval.append((Path(directory) / str(i) + '.rawbytes').open('rb').read())
-        return ''.join(retval)
-
-    def quota_remaining(self):
-        resp = self.session.get(RANDOM_ORG_QUOTA_API, params=dict(format='plain'))
-        return int(resp.content.strip())
+            res.append((Path(directory) / str(i) + '.rawbytes').open('rb').read())
+        return ''.join(res)
 
 def main():
-    random_org = RandomOrg()
+    random_org = GenRand()
     random_org.get_and_save_bytes(10000)
 
 if __name__ == "__main__":
